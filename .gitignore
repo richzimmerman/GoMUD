@@ -17,7 +17,7 @@
 .idea/*
 
 pkg/
-src/gopkg*
-src/github*
+src/gopkg.in/*
+src/github.com/*
 
 Notes.txt

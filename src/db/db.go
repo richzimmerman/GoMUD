@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-var DatabaseConnection *dbConnection
+var DatabaseConnection *DbConnection
 
 // TODO: Signing key for password encryption/decryption needs to be Configurable
 const key = "signing_key"
 
-type dbConnection struct {
-	db *sql.DB
+type DbConnection struct {
+	Connection *sql.DB
 }
 
 type DBAccount struct {
@@ -47,16 +47,15 @@ func InitDatabaseConnection() error {
 	if err != nil {
 		return err
 	}
-	DatabaseConnection = &dbConnection{
-		db: db,
+	DatabaseConnection = &DbConnection{
+		Connection: db,
 	}
 	return nil
 }
 
-func (d *dbConnection) CreateAccount(a *DBAccount) error {
-	// TODO: Test this
+func (d *DbConnection) CreateAccount(a *DBAccount) error {
 	s := fmt.Sprintf("INSERT INTO Accounts VALUES (?, AES_ENCRYPT(?, '%s'), ?, ?)", key)
-	statement, err := d.db.Prepare(s)
+	statement, err := d.Connection.Prepare(s)
 	if err != nil {
 		return fmt.Errorf("unable to create account: %v", err)
 	}
@@ -73,8 +72,8 @@ func (d *dbConnection) CreateAccount(a *DBAccount) error {
 	return nil
 }
 
-func (d *dbConnection) AccountExists(accountName string) (bool, error) {
-	searchStatement, err := d.db.Prepare("SELECT Name FROM Accounts WHERE Name = ?")
+func (d *DbConnection) AccountExists(accountName string) (bool, error) {
+	searchStatement, err := d.Connection.Prepare("SELECT Name FROM Accounts WHERE Name = ?")
 	if err != nil {
 		return false, err
 	}
@@ -100,9 +99,9 @@ func (d *dbConnection) AccountExists(accountName string) (bool, error) {
 	}
 }
 
-func (d *dbConnection) VerifyPassword(accountName string, password string) (bool, error) {
+func (d *DbConnection) VerifyPassword(accountName string, password string) (bool, error) {
 	statement := fmt.Sprintf("SELECT AES_DECRYPT(Password, '%s') FROM Accounts WHERE Name = ?", key)
-	rows, err := d.db.Query(statement, accountName)
+	rows, err := d.Connection.Query(statement, accountName)
 	if err != nil {
 		return false, err
 	}
@@ -118,8 +117,8 @@ func (d *dbConnection) VerifyPassword(accountName string, password string) (bool
 	return pw == password, nil
 }
 
-func (d *dbConnection) LoadAccount(accountName string) (*DBAccount, error) {
-	searchStatement, err := d.db.Prepare("SELECT * FROM Accounts WHERE Name = ?")
+func (d *DbConnection) LoadAccount(accountName string) (*DBAccount, error) {
+	searchStatement, err := d.Connection.Prepare("SELECT * FROM Accounts WHERE Name = ?")
 	if err != nil {
 		return nil, err
 	}
@@ -133,10 +132,9 @@ func (d *dbConnection) LoadAccount(accountName string) (*DBAccount, error) {
 	return a, nil
 }
 
-func (d *dbConnection) LoadAccountCharacters(accountName string) (map[string]*DBPlayer, error) {
-	// TODO: verify this works right
+func (d *DbConnection) LoadAccountCharacters(accountName string) (map[string]*DBPlayer, error) {
 	r := make(map[string]*DBPlayer)
-	rows, err := d.db.Query("SELECT * FROM Characters WHERE Account = ?", accountName)
+	rows, err := d.Connection.Query("SELECT * FROM Characters WHERE Account = ?", accountName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query characters for account %s: %v", accountName, err)
 	}
@@ -155,9 +153,9 @@ func (d *dbConnection) LoadAccountCharacters(accountName string) (map[string]*DB
 	return r, nil
 }
 
-func (d *dbConnection) ChangePassword(accountName string, password string) error {
+func (d *DbConnection) ChangePassword(accountName string, password string) error {
 	s := fmt.Sprintf("UPDATE Accounts SET Password = AES_ENCRYPT(?, '%s') WHERE Name = ?", key)
-	statement, err := d.db.Prepare(s)
+	statement, err := d.Connection.Prepare(s)
 	if err != nil {
 		return fmt.Errorf("unable to create account: %v", err)
 	}

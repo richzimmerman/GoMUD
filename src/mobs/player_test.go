@@ -9,6 +9,7 @@ func NewTestPlayer() *Player {
 	mob := &Mob{
 		"Mrbagginz",
 		"Mrbagginz",
+		1,
 		100,
 		100,
 		100,
@@ -65,9 +66,9 @@ func TestPlayer_SetDisplayName(t *testing.T) {
 	assert.Equal(t, p.DisplayName(), "Schmitty McWibberManJensen")
 }
 
-func TestPlayer_SetClass(t *testing.T) {
+func TestPlayer_SetRace(t *testing.T) {
 	p := NewTestPlayer()
 
-	p.SetClass("Orc")
-	assert.Equal(t, p.Class(), "Orc")
+	p.SetRace("Orc")
+	assert.Equal(t, p.Race(), "Orc")
 }

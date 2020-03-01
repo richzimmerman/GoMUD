@@ -1,4 +1,4 @@
-package server
+package client
 
 import (
 	"account"
@@ -37,8 +37,8 @@ const (
 	stateCreateAccountEmail           = 19
 	stateVerify                       = 20
 
-	accountPrompt  = "<G>Account:</G> "
-	passwordPrompt = "<Bl>Password:</Bl> "
+	accountPrompt  = "<Y>Account:</Y> "
+	passwordPrompt = "<Y>Password:</Y> "
 
 	invalidAccount  = "Account does not exist. Create new account? (Y/n)\n"
 	invalidPassword = "Invalid password, please try logging in again.\n"
@@ -60,7 +60,6 @@ type Client struct {
 	loggedIn    bool
 	state       int8
 	Connection  net.Conn
-	Address     string
 	Telnet      *telnet.Telnet
 	Name        string
 	Player      *mobs.Player
@@ -74,7 +73,6 @@ func NewClient(c net.Conn) *Client {
 	in := bufio.NewReader(c)
 	client := &Client{
 		Connection:  c,
-		Address:     c.RemoteAddr().String(),
 		Telnet:      telnet.NewTelnet(c, in),
 		In:          in,
 		OutputSteam: make(chan string),
@@ -119,7 +117,7 @@ func (c *Client) prompt() (string, error) {
 	}
 }
 
-func (c *Client) gameLoop() error {
+func (c *Client) GameLoop() error {
 	defer c.Connection.Close()
 
 	c.outListener()
@@ -342,7 +340,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 }
 
 func (c *Client) createAccount(accountName string, password string, email string) error {
-	lastip := strings.SplitN(c.Address, ":", 1)
+	lastip := strings.SplitN(c.Connection.RemoteAddr().String(), ":", 1)
 	fmt.Printf("last ip: %s \n", lastip)
 	a, err := account.NewAccount(accountName, password, lastip[0], email)
 	if err != nil {
@@ -435,63 +433,6 @@ func (c *Client) accountMenu() error {
 		case stateAccountQuit:
 			c.state = stateDisconnected
 			return nil
-		}
-	}
-}
-
-func (c *Client) createCharacter() {
-	c.OutputSteam <- "<P>You've chosen to create a character!</P>"
-	_, err := c.prompt()
-	if err != nil {
-		fmt.Println("failed to create character")
-	}
-}
-
-func (c *Client) changePassword() error {
-	var password string
-	var confirmedPassword string
-	var err error
-	changeState := stateAccountChangePassword
-	for {
-		switch c.state {
-		case statePrompt:
-			switch changeState {
-			case stateAccountChangePassword:
-				password, err = c.prompt()
-				if err != nil {
-					return err
-				}
-				// Reusing statePassword for the confirmation
-				c.state = statePassword
-				changeState = statePassword
-				break
-			case statePassword:
-				confirmedPassword, err = c.prompt()
-				if err != nil {
-					return err
-				}
-				c.state = stateVerify
-				break
-			}
-			break
-		case stateAccountChangePassword:
-			c.OutputSteam <- "<Y>Enter new password:</Y>"
-			c.state = statePrompt
-			break
-		case statePassword:
-			c.OutputSteam <- "<Y>Re-enter to confirm new password:</Y>"
-			c.state = statePrompt
-			break
-		case stateVerify:
-			if password != confirmedPassword {
-				return fmt.Errorf("password change failed, passwords do not match")
-			} else {
-				err = c.Account.ChangePassword(password)
-				if err != nil {
-					return fmt.Errorf("failed to update password: %v", err)
-				}
-				return nil
-			}
 		}
 	}
 }

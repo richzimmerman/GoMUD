@@ -9,6 +9,7 @@ func NewTestMob() *Mob {
 	return &Mob{
 		"Mrbagginz",
 		"Mrbagginz",
+		1,
 		100,
 		100,
 		100,

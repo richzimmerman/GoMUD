@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"server/client"
 )
 
 const (
@@ -14,13 +15,13 @@ const (
 var Server *server
 
 type server struct {
-	Clients            *map[string]*Client
+	Clients            *map[string]*client.Client
 	Listener           net.Listener
 	disconnectListener chan string
 }
 
 func NewServer() (*server, error) {
-	clients := make(map[string]*Client)
+	clients := make(map[string]*client.Client)
 	listener, err := net.Listen("tcp4", PORT)
 	if err != nil {
 		return nil, err
@@ -33,16 +34,16 @@ func NewServer() (*server, error) {
 }
 
 func (s *server) handleConnection(c net.Conn) {
-	client := NewClient(c)
+	newClient := client.NewClient(c)
 
-	(*s.Clients)[client.Address] = client
-	fmt.Printf("Connection received from: %s \n", client.Address)
+	(*s.Clients)[c.RemoteAddr().String()] = newClient
+	fmt.Printf("Connection received from: %s \n", c.RemoteAddr().String())
 
-	err := client.gameLoop()
+	err := newClient.GameLoop()
 	if err != nil {
 		fmt.Printf("broken connection (%s): %v \n", c.RemoteAddr().String(), err)
 	}
-	s.disconnectListener <- client.Address
+	s.disconnectListener <- c.RemoteAddr().String()
 }
 
 func Start(ctx context.Context) {

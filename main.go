@@ -13,6 +13,8 @@ func main() {
 		panic(fmt.Errorf("unable to initialize db connection: %v", err))
 	}
 
+	defer db.DatabaseConnection.Connection.Close()
+
 	// TODO: Load rooms/map from DB
 
 	// TODO: Load config for.. stuff?

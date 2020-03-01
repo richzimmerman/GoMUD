@@ -34,22 +34,23 @@ const (
 	stateCreateAccountNameConfirm     = 16
 	stateCreateAccountPassword        = 17
 	stateCreateAccountPasswordConfirm = 18
-	stateVerify                       = 19
+	stateCreateAccountEmail           = 19
+	stateVerify                       = 20
 
 	accountPrompt  = "<G>Account:</G> "
 	passwordPrompt = "<Bl>Password:</Bl> "
 
-	invalidAccount  = "Account does not exist.\n"
+	invalidAccount  = "Account does not exist. Create new account? (Y/n)\n"
 	invalidPassword = "Invalid password, please try logging in again.\n"
 
 	accountMenu = `
 <Y>Account Menu</Y>
 <BW>------------</BW>
-<Y>N)</Y> <W>New Character</W>
-<Y>L)</Y> <W>List Characters</W>
-<Y>D)</Y> <W>Delete Character</W>
-<Y>C)</Y> <W>Change Password</W>
-<Y>Q)</Y> <W>Quit</W>
+<Y>N)</Y> New Character
+<Y>L)</Y> List Characters
+<Y>D)</Y> Delete Character
+<Y>C)</Y> Change Password
+<Y>Q)</Y> Quit
 <BW>------------</BW>
 <Y>Enter a menu item or character name to log in:</Y>
 `
@@ -193,7 +194,15 @@ func (c *Client) logIn() (bool, error) {
 					c.state = statePassword
 				} else {
 					c.OutputSteam <- invalidAccount
-					c.state = stateAccount
+					i, err := c.prompt()
+					if err != nil {
+						return false, err
+					}
+					if strings.ToLower(i) == "y" {
+						return c.createAccountPrompt()
+					} else {
+						c.state = stateAccount
+					}
 				}
 				break
 			case statePassword:
@@ -231,23 +240,106 @@ func (c *Client) logIn() (bool, error) {
 	}
 }
 
-//func (c *Client) createAccountPrompt() (bool, error) {
-//	var accountName string
-//	var password string
-//	var err error
-//
-//	c.state = stateCreateAccount
-//	var createState = stateCreateAccount
-//	for {
-//		switch c.state {
-//		case statePrompt:
-//			switch createState {
-//			case stateCreateAccount:
-//
-//			}
-//		}
-//	}
-//}
+func (c *Client) createAccountPrompt() (bool, error) {
+	var accountName string
+	var password string
+	var email string
+	var err error
+
+	c.state = stateCreateAccountName
+	var createState = stateCreateAccountName
+	for {
+		switch c.state {
+		case statePrompt:
+			switch createState {
+			case stateCreateAccount:
+				break
+			case stateCreateAccountName:
+				accountName, err = c.prompt()
+				if err != nil {
+					return false, err
+				}
+				c.state = stateCreateAccountNameConfirm
+				break
+			case stateCreateAccountNameConfirm:
+				i, err := c.prompt()
+				if err != nil {
+					return false, err
+				}
+				if strings.ToLower(i) == "y" {
+					c.state = stateCreateAccountPassword
+				} else if strings.ToLower(i) == "n" {
+					// Reset account creation (or maybe go back to main menu) (or maybe add Q option)
+					createState = stateCreateAccount
+					c.state = stateCreateAccount
+				} else {
+					c.OutputSteam <- "Please enter Y or N to confirm your account name."
+				}
+				break
+			case stateCreateAccountPassword:
+				password, err = c.prompt()
+				if err != nil {
+					return false, err
+				}
+				// TODO: match password against required password schema
+				c.state = stateCreateAccountPasswordConfirm
+				break
+			case stateCreateAccountPasswordConfirm:
+				i, err := c.prompt()
+				if err != nil {
+					return false, err
+				}
+				if i != password {
+					c.OutputSteam <- "<Y>Password does not match, please retry.</Y>"
+				}
+				c.state = stateCreateAccountEmail
+				break
+			case stateCreateAccountEmail:
+				email, err = c.prompt()
+				if err != nil {
+					return false, err
+				}
+				c.state = stateCreateAccount
+				break
+			}
+			break
+		case stateCreateAccountName:
+			c.OutputSteam <- "<Y>Enter desired account name (Note: Account names are case sensitive):</Y>"
+			c.state = statePrompt
+			break
+		case stateCreateAccountNameConfirm:
+			// TODO: db verify account name
+			// if account name exists, error back out to main menu
+			c.OutputSteam <- fmt.Sprintf("%s: <Y>is this correct? (Y/n)</Y>", accountName)
+			c.state = statePrompt
+			createState = stateCreateAccountNameConfirm
+			break
+		case stateCreateAccountPassword:
+			c.OutputSteam <- "<Y>Enter your password:</Y>"
+			c.state = statePrompt
+			createState = stateCreateAccountPassword
+			break
+		case stateCreateAccountPasswordConfirm:
+			c.OutputSteam <- "<Y>Re-enter password to confirm.</Y>"
+			c.state = statePrompt
+			createState = stateCreateAccountPasswordConfirm
+			break
+		case stateCreateAccountEmail:
+			c.OutputSteam <- "<Y>Enter your e-mail address.</Y>"
+			c.state = statePrompt
+			createState = stateCreateAccountEmail
+			break
+		case stateCreateAccount:
+			lastip := strings.Split(c.Connection.RemoteAddr().String(), ":")[0]
+			c.Account, err = account.NewAccount(accountName, password, lastip, email)
+			if err != nil {
+				return false, err
+			}
+
+			return true, nil
+		}
+	}
+}
 
 func (c *Client) createAccount(accountName string, password string, email string) error {
 	lastip := strings.SplitN(c.Address, ":", 1)
@@ -312,16 +404,19 @@ func (c *Client) accountMenu() error {
 			break
 		case stateAccountNewCharacter:
 			// TODO: character creation
-			c.OutputSteam <- "<W>creating character!</W>"
+			c.OutputSteam <- "creating character!"
 			c.createCharacter()
 			break
 		case stateAccountListCharacters:
 			// TODO: list characters (Account struct method)
-			//for _, character in range c.Account.Characters() {
-			//	c.OutputSteam <- character
-			//}
-			// TODO: this might be a deadlock.
-			c.OutputSteam <- "<W>Characters: Mrbagginz, Frodo, Samwise</W>"
+			if len(c.Account.Characters) == 0 {
+				c.OutputSteam <- "<Y>You have no characters on this account.</Y>"
+			} else {
+				for _, character := range c.Account.Characters {
+					c.OutputSteam <- fmt.Sprintf("<Y>%s</Y>: Level %d %s",
+						character.Name(), character.Level(), character.Race())
+				}
+			}
 			c.state = statePrompt
 			break
 		case stateAccountDeleteCharacter:

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"strings"
 )
 
 var DatabaseConnection *dbConnection
@@ -22,10 +23,11 @@ type DBAccount struct {
 	Email    string
 }
 
-type DBCharacter struct {
+type DBPlayer struct {
 	Name        string
 	Account     string
 	DisplayName string
+	Level       int8
 	Health      int16
 	Fatigue     int16
 	Power       int16
@@ -35,7 +37,7 @@ type DBCharacter struct {
 	Stats       string // JSON?
 	Stance      int8
 	Skills      string // JSON Array: List of skills to load later ["skill1", "skill2", "skill3"]
-	Spells		string // Same as above
+	Spells      string // Same as above
 	Buffs       string // JSON array of objects [{"name": "buff1", "duration":12345}, {}, {}]
 	Debuffs     string // Same as above
 }
@@ -53,7 +55,7 @@ func InitDatabaseConnection() error {
 
 func (d *dbConnection) CreateAccount(a *DBAccount) error {
 	// TODO: Test this
-	s := fmt.Sprintf("INSERT INTO Accounts VALUES (?, AES_ENCRYPT(?, %s), ?, ?)", key)
+	s := fmt.Sprintf("INSERT INTO Accounts VALUES (?, AES_ENCRYPT(?, '%s'), ?, ?)", key)
 	statement, err := d.db.Prepare(s)
 	if err != nil {
 		return fmt.Errorf("unable to create account: %v", err)
@@ -83,7 +85,11 @@ func (d *dbConnection) AccountExists(accountName string) (bool, error) {
 	if err != nil {
 		// This should indicate that now row was returned and the account does not exist.
 		fmt.Println(fmt.Errorf("unable to get account id: %v", err))
-		return false, nil
+		if strings.Contains(err.Error(), "no rows in result") {
+			return false, nil
+		} else {
+			return false, err
+		}
 	}
 
 	// For sanity's sake.
@@ -127,9 +133,9 @@ func (d *dbConnection) LoadAccount(accountName string) (*DBAccount, error) {
 	return a, nil
 }
 
-func (d *dbConnection) LoadPlayers(accountName string) (map[string]*DBCharacter, error) {
+func (d *dbConnection) LoadAccountCharacters(accountName string) (map[string]*DBPlayer, error) {
 	// TODO: verify this works right
-	r := make(map[string]*DBCharacter)
+	r := make(map[string]*DBPlayer)
 	rows, err := d.db.Query("SELECT * FROM Characters WHERE Account = ?", accountName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to query characters for account %s: %v", accountName, err)
@@ -137,8 +143,8 @@ func (d *dbConnection) LoadPlayers(accountName string) (map[string]*DBCharacter,
 	defer rows.Close()
 
 	for rows.Next() {
-		p := &DBCharacter{}
-		err := rows.Scan(&p.Name, &p.Account, &p.DisplayName, &p.Health, &p.Fatigue, &p.Power, &p.Title,
+		p := &DBPlayer{}
+		err := rows.Scan(&p.Name, &p.Account, &p.DisplayName, &p.Level, &p.Health, &p.Fatigue, &p.Power, &p.Title,
 			&p.RealmTitle, &p.Race, &p.Stats, &p.Stance, &p.Skills, &p.Spells, &p.Buffs, &p.Debuffs)
 		if err != nil {
 			fmt.Printf("failed to scan row: %v\n", err)

@@ -25,9 +25,7 @@ type Player struct {
 	*Mob
 }
 
-// TODO: figure out how to not have circular imports with db
-func LoadPlayer(p *db.DBCharacter) (*Player, error) {
-	// TODO: Load player data from database with DBPlayer struct
+func LoadPlayer(p *db.DBPlayer) (*Player, error) {
 	// TODO: this for buffs and debuffs. Remember to parse JSON first.
 	//b := make(map[string]*spells.Buff)
 	//for _, buff := range p.Buffs {
@@ -36,6 +34,7 @@ func LoadPlayer(p *db.DBCharacter) (*Player, error) {
 	mob := &Mob{
 		p.Name,
 		p.DisplayName,
+		p.Level,
 		p.Health,
 		p.Fatigue,
 		p.Power,

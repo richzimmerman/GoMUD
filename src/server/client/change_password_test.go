@@ -1,10 +1,7 @@
 package client
 
 import (
-	"account"
-	"bufio"
 	"db"
-	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"net"
@@ -13,37 +10,6 @@ import (
 	"time"
 )
 
-func NewMockAccount() *account.Account {
-	dba := &db.DBAccount{
-		Name: "Foo",
-		Password: "TestPassword",
-		LastIP: "127.0.0.1",
-		Email: "foo@test.com",
-	}
-	return &account.Account{
-		DBAccount:  dba,
-		Characters: nil,
-	}
-}
-
-func NewTestServer(client *Client) net.Listener {
-	var err error
-	l, err := net.Listen("tcp4", ":54321")
-	if err != nil {
-		fmt.Printf("unable to spin up test server: %v", err)
-	}
-
-	go func() {
-		c, err := l.Accept()
-		if err != nil {
-			fmt.Printf("unable to accept connection on test server: %v", err)
-		}
-		client.Connection = c
-		client.In = bufio.NewReader(c)
-	}()
-	return l
-}
-
 func callChangePassword(client *Client, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	err := client.changePassword()
@@ -51,37 +17,23 @@ func callChangePassword(client *Client, wg *sync.WaitGroup) error {
 }
 
 func TestChange_Password_Success(t *testing.T) {
-	d, mock, err := sqlmock.New()
+	var conn net.Conn
+
+	mock, err := InitMockDB()
 	if err != nil {
 		t.Fatalf("error mocking database: %v", err)
 	}
-	defer d.Close()
-
-	db.DatabaseConnection = &db.DbConnection{
-		Connection: d,
-	}
+	defer db.DatabaseConnection.Connection.Close()
 
 	mock.ExpectPrepare("UPDATE Accounts").WillBeClosed().ExpectExec().
 		WithArgs("newtestpassword", "Foo").WillReturnResult(sqlmock.NewResult(1, 1))
 
-	client := &Client{
-		loggedIn:    false,
-		state:       stateAccountChangePassword,
-		Connection:  nil,
-		Telnet:      nil,
-		Name:        "",
-		Player:      nil,
-		Account:     nil,
-		OutputSteam: make(chan string),
-		outMutex:    sync.Mutex{},
-		In:          nil,
-	}
+	client := NewTestClientState(stateAccountChangePassword)
 	client.Account = NewMockAccount()
 
 	l := NewTestServer(client)
 	defer l.Close()
 
-	var conn net.Conn
 	if conn, err = net.Dial("tcp4", ":54321"); err != nil {
 		t.Fatalf("unable to connect to test port: %v\n", err)
 	}
@@ -89,7 +41,7 @@ func TestChange_Password_Success(t *testing.T) {
 
 	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
 	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
-	time.Sleep(time.Millisecond * 250)
+	time.Sleep(time.Millisecond * 50)
 
 	var wg sync.WaitGroup
 
@@ -117,18 +69,7 @@ func TestChange_Password_Success(t *testing.T) {
 }
 
 func TestChange_Password_Mismatch(t *testing.T) {
-	client := &Client{
-		loggedIn:    false,
-		state:       stateAccountChangePassword,
-		Connection:  nil,
-		Telnet:      nil,
-		Name:        "",
-		Player:      nil,
-		Account:     nil,
-		OutputSteam: make(chan string),
-		outMutex:    sync.Mutex{},
-		In:          nil,
-	}
+	client := NewTestClientState(stateAccountChangePassword)
 	client.Account = NewMockAccount()
 
 	l := NewTestServer(client)
@@ -143,7 +84,7 @@ func TestChange_Password_Mismatch(t *testing.T) {
 
 	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
 	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
-	time.Sleep(time.Millisecond * 250)
+	time.Sleep(time.Millisecond * 50)
 
 	var wg sync.WaitGroup
 

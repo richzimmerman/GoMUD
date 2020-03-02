@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"telnet"
+	"utils"
 )
 
 const (
@@ -136,7 +137,7 @@ func (c *Client) GameLoop() error {
 		case stateLogin:
 			ok, err := c.logIn()
 			if err != nil {
-				return fmt.Errorf("unable to login: %v \n", err)
+				return utils.Error(fmt.Errorf("failed login: %v", err))
 			}
 			if ok {
 				c.state = stateLoggedIn
@@ -147,7 +148,7 @@ func (c *Client) GameLoop() error {
 		case stateLoggedIn:
 			err := c.accountMenu()
 			if err != nil {
-				return err
+				return utils.Error(err)
 			}
 			break
 		case stateInGame:

@@ -4,6 +4,7 @@ import (
 	"account"
 	"fmt"
 	"strings"
+	"utils"
 )
 
 func (c *Client) createAccountPrompt() (bool, error) {
@@ -23,14 +24,14 @@ func (c *Client) createAccountPrompt() (bool, error) {
 			case stateCreateAccountName:
 				accountName, err = c.prompt()
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				c.state = stateCreateAccountNameConfirm
 				break
 			case stateCreateAccountNameConfirm:
 				i, err := c.prompt()
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				if strings.ToLower(i) == "y" {
 					c.state = stateCreateAccountPassword
@@ -45,7 +46,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 			case stateCreateAccountPassword:
 				password, err = c.prompt()
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				// TODO: match password against required password schema
 				c.state = stateCreateAccountPasswordConfirm
@@ -53,7 +54,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 			case stateCreateAccountPasswordConfirm:
 				i, err := c.prompt()
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				if i != password {
 					c.OutputSteam <- "<Y>Password does not match, please retry.</Y>"
@@ -63,7 +64,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 			case stateCreateAccountEmail:
 				email, err = c.prompt()
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				c.state = stateCreateAccount
 				break
@@ -99,7 +100,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 			lastip := strings.Split(c.Connection.RemoteAddr().String(), ":")[0]
 			c.Account, err = account.NewAccount(accountName, password, lastip, email)
 			if err != nil {
-				return false, err
+				return false, utils.Error(err)
 			}
 			return true, nil
 		}
@@ -111,7 +112,7 @@ func (c *Client) createAccount(accountName string, password string, email string
 	fmt.Printf("last ip: %s \n", lastip)
 	a, err := account.NewAccount(accountName, password, lastip[0], email)
 	if err != nil {
-		return fmt.Errorf("unable to create account %s: %v", accountName, email)
+		return utils.Error(err)
 	}
 	c.Account = a
 	return nil

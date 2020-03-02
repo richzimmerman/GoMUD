@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"strings"
+	"utils"
 )
 
 func (c *Client) accountMenu() error {
@@ -14,7 +15,7 @@ func (c *Client) accountMenu() error {
 		case statePrompt:
 			input, err = c.prompt()
 			if err != nil {
-				return fmt.Errorf("unable to login via account menu: %v", err)
+				return utils.Error(err)
 			}
 			switch strings.ToLower(input) {
 			case "n":

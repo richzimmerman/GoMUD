@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"utils"
 )
 
 const (
@@ -69,7 +70,7 @@ func (t *Telnet) Read() (int, error) {
 		tempIn := make([]byte, BufferSize)
 		length, err := t.InputSteam.Read(tempIn)
 		if err != nil {
-			return -1, err
+			return -1, utils.Error(err)
 		}
 		i, err = t.negotiate(inputBuffer, tempIn)
 		if length < 0 {

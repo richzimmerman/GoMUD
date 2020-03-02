@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"server/client"
+	"utils"
 )
 
 const (
@@ -24,7 +25,7 @@ func NewServer() (*server, error) {
 	clients := make(map[string]*client.Client)
 	listener, err := net.Listen("tcp4", PORT)
 	if err != nil {
-		return nil, err
+		return nil, utils.Error(err)
 	}
 	return &server{
 		Clients: &clients,

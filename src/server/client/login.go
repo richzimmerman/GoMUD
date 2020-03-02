@@ -4,6 +4,7 @@ import (
 	"account"
 	"db"
 	"strings"
+	"utils"
 )
 
 func (c *Client) logIn() (bool, error) {
@@ -18,11 +19,11 @@ func (c *Client) logIn() (bool, error) {
 			case stateAccount:
 				accountName, err = c.prompt()
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				ok, err := db.DatabaseConnection.AccountExists(accountName)
 				if err != nil {
-					return false, err
+					return false, utils.Error(err)
 				}
 				if ok {
 					loginState = statePassword
@@ -31,7 +32,7 @@ func (c *Client) logIn() (bool, error) {
 					c.OutputSteam <- invalidAccount
 					i, err := c.prompt()
 					if err != nil {
-						return false, err
+						return false, utils.Error(err)
 					}
 					if strings.ToLower(i) == "y" {
 						return c.createAccountPrompt()
@@ -52,7 +53,7 @@ func (c *Client) logIn() (bool, error) {
 				if ok {
 					c.Account, err = account.LoadAccount(accountName)
 					if err != nil {
-						return false, err
+						return false, utils.Error(err)
 					}
 					return true, nil
 				} else {

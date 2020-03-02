@@ -1,6 +1,9 @@
 package client
 
-import "fmt"
+import (
+	"fmt"
+	"utils"
+)
 
 func (c *Client) changePassword() error {
 	var password string
@@ -14,7 +17,7 @@ func (c *Client) changePassword() error {
 			case stateAccountChangePassword:
 				password, err = c.prompt()
 				if err != nil {
-					return err
+					return utils.Error(err)
 				}
 				// Reusing statePassword for the confirmation
 				c.state = statePassword
@@ -23,7 +26,7 @@ func (c *Client) changePassword() error {
 			case statePassword:
 				confirmedPassword, err = c.prompt()
 				if err != nil {
-					return err
+					return utils.Error(err)
 				}
 				c.state = stateVerify
 				break
@@ -43,7 +46,7 @@ func (c *Client) changePassword() error {
 			} else {
 				err = c.Account.ChangePassword(password)
 				if err != nil {
-					return fmt.Errorf("failed to update password: %v", err)
+					return utils.Error(err)
 				}
 				return nil
 			}

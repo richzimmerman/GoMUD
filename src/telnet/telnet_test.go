@@ -1,8 +1,10 @@
 package telnet
 
 import (
+	"bufio"
 	"bytes"
 	"github.com/stretchr/testify/assert"
+	"sync"
 	"testing"
 )
 
@@ -51,4 +53,40 @@ func TestNormalNegotiation(t *testing.T) {
 	outBuffer = bytes.Trim(outBuffer, "\x00")
 	assert.Equal(t, 11, size)
 	assert.Equal(t, "foo bar baz", string(outBuffer))
+}
+
+func TestTelnet_Prompt(t *testing.T) {
+	testGmcp := []byte{iac, sb, optGmcp, 116, 101, 115, 116, 103, 109, 99, 112, 32, 123, 34, 100, 97, 116, 97, 34, 58, 32, 34, 102, 111, 111, 34, 125, iac, se}
+	testInput := []byte("some input")
+
+	test := append(testGmcp, testInput...)
+
+	r := bytes.NewReader(test)
+
+	telnet := Telnet{
+		Connection:         nil,
+		InputSteam:         bufio.NewReader(r),
+		Data:           make(chan []byte, 1),
+		negState:       0,
+		subnegOffset:   0,
+		subnegotiation: make([]byte, 2048),
+	}
+
+	var input string
+	var err error
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		input, err = telnet.Prompt()
+	}()
+
+	wg.Wait()
+
+	gmcpData := <- telnet.Data
+
+	assert.Nil(t, err)
+	assert.Equal(t, "some input", input)
+	assert.Equal(t, "testgmcp {\"data\": \"foo\"}", string(gmcpData))
 }

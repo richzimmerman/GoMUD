@@ -2,10 +2,28 @@ package mobs
 
 import (
 	"github.com/stretchr/testify/assert"
+	"races"
 	"testing"
 )
 
 func NewTestPlayer() *Player {
+	races.Races = make(map[string]*races.Race)
+
+	r := &races.Race{
+		Name:           "TestClass",
+		Realm:          0,
+		Type:           0,
+		SkillList:      nil,
+		Description:    "",
+		DefaultHealth:  0,
+		DefaultFatigue: 0,
+		DefaultPower:   0,
+		StartingRoom:   "",
+		DefaultTitle:   "",
+		DefaultStats:   make(map[string]int8),
+	}
+	races.Races["TestClass"] = r
+
 	mob := &Mob{
 		"Mrbagginz",
 		"Mrbagginz",
@@ -15,11 +33,13 @@ func NewTestPlayer() *Player {
 		100,
 		nil,
 		nil,
+		"",
 	}
 	return &Player{
 		"Goblin Maester",
 		"Goblin Jedi Master",
 		"Goblin",
+		nil,
 		nil,
 		0,
 		nil,
@@ -69,6 +89,14 @@ func TestPlayer_SetDisplayName(t *testing.T) {
 func TestPlayer_SetRace(t *testing.T) {
 	p := NewTestPlayer()
 
-	p.SetRace("Orc")
-	assert.Equal(t, p.Race(), "Orc")
+	err := p.SetRace("TestClass")
+	assert.Nil(t, err)
+	assert.Equal(t, p.Race(), "TestClass")
+}
+
+func TestPlayer_SetRace_Failed(t *testing.T) {
+	p := NewTestPlayer()
+
+	err := p.SetRace("Orc")
+	assert.NotNil(t, err)
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"mobs"
 	"net"
+	"races"
 	"sync"
 	"testing"
 	"time"
@@ -20,6 +21,22 @@ func TestAccountMenu(t *testing.T) {
 	var err error
 	var conn net.Conn
 
+	races.Races = make(map[string]*races.Race)
+
+	races.Races["TestClass"] = &races.Race{
+		Name:           "TestClass",
+		Realm:          0,
+		Type:           0,
+		SkillList:      nil,
+		Description:    "",
+		DefaultHealth:  0,
+		DefaultFatigue: 0,
+		DefaultPower:   0,
+		StartingRoom:   "",
+		DefaultTitle:   "",
+		DefaultStats:   make(map[string]int8),
+	}
+
 	p := &db.DBPlayer{
 		Name: "TestPlayer",
 		Account: "TestAccount",
@@ -31,12 +48,12 @@ func TestAccountMenu(t *testing.T) {
 		Title: "TestTitle",
 		RealmTitle: "TestRealmTitle",
 		Race: "TestClass",
-		Stats: "",
+		Stats: "{}",
 		Stance: 0,
-		Skills: "",
-		Spells: "",
-		Buffs: "",
-		Debuffs: "",
+		Skills: "[]",
+		Spells: "[]",
+		Buffs: "{}",
+		Debuffs: "{}",
 	}
 
 	fakePlayer, err := mobs.LoadPlayer(p)

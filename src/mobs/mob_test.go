@@ -15,6 +15,7 @@ func NewTestMob() *Mob {
 		100,
 		nil,
 		nil,
+		"",
 	}
 }
 

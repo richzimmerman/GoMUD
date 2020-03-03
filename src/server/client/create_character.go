@@ -47,7 +47,7 @@ func (c *Client) createCharacter() error {
 		case statePrompt:
 			switch createState {
 			case stateName:
-				name, err = c.prompt()
+				name, err = c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -71,7 +71,7 @@ func (c *Client) createCharacter() error {
 				}
 				break
 			case stateNameConfirm:
-				input, err := c.prompt()
+				input, err := c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -90,7 +90,7 @@ func (c *Client) createCharacter() error {
 					c.OutputSteam <- "<Y>Please enter Y or N to confirm</Y>"
 				}
 			case stateRealm:
-				realm, err = c.prompt()
+				realm, err = c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -111,7 +111,7 @@ func (c *Client) createCharacter() error {
 				}
 				break
 			case stateRealmConfirm:
-				input, err := c.prompt()
+				input, err := c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -130,7 +130,7 @@ func (c *Client) createCharacter() error {
 					c.OutputSteam <- "<Y>Please enter Y or N to confirm</Y>"
 				}
 			case stateRace:
-				race, err = c.prompt()
+				race, err = c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -151,7 +151,7 @@ func (c *Client) createCharacter() error {
 				}
 				break
 			case stateRaceConfirm:
-				input, err := c.prompt()
+				input, err := c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -170,7 +170,7 @@ func (c *Client) createCharacter() error {
 					c.OutputSteam <- "<Y>Please enter Y or N to confirm</Y>"
 				}
 			case stateCharacterConfirm:
-				input, err := c.prompt()
+				input, err := c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}

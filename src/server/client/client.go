@@ -7,7 +7,6 @@ import (
 	"mobs"
 	"net"
 	"output"
-	"strings"
 	"sync"
 	"telnet"
 	"utils"
@@ -108,17 +107,6 @@ func (c *Client) outListener() {
 		}
 
 	}()
-}
-
-func (c *Client) prompt() (string, error) {
-	/* Generic Prompt method to get a single input for menu/login related prompts */
-	for {
-		input, err := c.In.ReadString('\n')
-		if err != nil {
-			return "", err
-		}
-		return strings.TrimSpace(input), nil
-	}
 }
 
 func (c *Client) GameLoop() error {

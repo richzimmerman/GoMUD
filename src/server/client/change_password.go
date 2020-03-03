@@ -15,7 +15,7 @@ func (c *Client) changePassword() error {
 		case statePrompt:
 			switch changeState {
 			case stateAccountChangePassword:
-				password, err = c.prompt()
+				password, err = c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}
@@ -24,7 +24,7 @@ func (c *Client) changePassword() error {
 				changeState = statePassword
 				break
 			case statePassword:
-				confirmedPassword, err = c.prompt()
+				confirmedPassword, err = c.Telnet.Prompt()
 				if err != nil {
 					return utils.Error(err)
 				}

@@ -63,6 +63,31 @@ func NewTelnet(c net.Conn, i *bufio.Reader) *Telnet {
 	return t
 }
 
+// Very similar to the Read function, but this returns the input string for a prompt rather than
+// continually feeding input into the input queue, but will still handle subnegotiations while waiting for input.
+func (t *Telnet) Prompt() (string, error) {
+	i := 0
+	inputBuffer := make([]byte, MaxInputSize)
+	for i == 0 {
+		tempIn := make([]byte, BufferSize)
+		length, err := t.InputSteam.Read(tempIn)
+		if err != nil {
+			return "", utils.Error(err)
+		}
+		i, err = t.negotiate(inputBuffer, tempIn)
+		if length < 0 {
+			i = length
+			break
+		}
+	}
+	// Remove trailing null bytes
+	inputBuffer = bytes.Trim(inputBuffer, "\x00")
+	input := string(inputBuffer)
+	// Remove whitespace to clean up input
+	input = strings.TrimSpace(input)
+	return input, nil
+}
+
 func (t *Telnet) Read() (int, error) {
 	i := 0
 	inputBuffer := make([]byte, MaxInputSize)

@@ -17,7 +17,7 @@ func (c *Client) logIn() (bool, error) {
 		case statePrompt:
 			switch loginState {
 			case stateAccount:
-				accountName, err = c.prompt()
+				accountName, err = c.Telnet.Prompt()
 				if err != nil {
 					return false, utils.Error(err)
 				}
@@ -30,7 +30,7 @@ func (c *Client) logIn() (bool, error) {
 					c.state = statePassword
 				} else {
 					c.OutputSteam <- invalidAccount
-					i, err := c.prompt()
+					i, err := c.Telnet.Prompt()
 					if err != nil {
 						return false, utils.Error(err)
 					}
@@ -42,7 +42,7 @@ func (c *Client) logIn() (bool, error) {
 				}
 				break
 			case statePassword:
-				pw, err := c.prompt()
+				pw, err := c.Telnet.Prompt()
 				if err != nil {
 					return false, err
 				}

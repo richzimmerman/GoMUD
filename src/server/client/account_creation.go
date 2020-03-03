@@ -22,14 +22,14 @@ func (c *Client) createAccountPrompt() (bool, error) {
 			case stateCreateAccount:
 				break
 			case stateCreateAccountName:
-				accountName, err = c.prompt()
+				accountName, err = c.Telnet.Prompt()
 				if err != nil {
 					return false, utils.Error(err)
 				}
 				c.state = stateCreateAccountNameConfirm
 				break
 			case stateCreateAccountNameConfirm:
-				i, err := c.prompt()
+				i, err := c.Telnet.Prompt()
 				if err != nil {
 					return false, utils.Error(err)
 				}
@@ -44,7 +44,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 				}
 				break
 			case stateCreateAccountPassword:
-				password, err = c.prompt()
+				password, err = c.Telnet.Prompt()
 				if err != nil {
 					return false, utils.Error(err)
 				}
@@ -52,7 +52,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 				c.state = stateCreateAccountPasswordConfirm
 				break
 			case stateCreateAccountPasswordConfirm:
-				i, err := c.prompt()
+				i, err := c.Telnet.Prompt()
 				if err != nil {
 					return false, utils.Error(err)
 				}
@@ -62,7 +62,7 @@ func (c *Client) createAccountPrompt() (bool, error) {
 				c.state = stateCreateAccountEmail
 				break
 			case stateCreateAccountEmail:
-				email, err = c.prompt()
+				email, err = c.Telnet.Prompt()
 				if err != nil {
 					return false, utils.Error(err)
 				}

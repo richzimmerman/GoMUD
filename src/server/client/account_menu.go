@@ -13,7 +13,7 @@ func (c *Client) accountMenu() error {
 	for {
 		switch c.state {
 		case statePrompt:
-			input, err = c.prompt()
+			input, err = c.Telnet.Prompt()
 			if err != nil {
 				return utils.Error(err)
 			}

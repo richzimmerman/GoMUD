@@ -172,6 +172,7 @@ func (c *Client) inGameLoop() {
 	/*
 		The main in-game loop, starts after login
 	*/
+	c.OutputSteam <- "<R>You've logged into the game! Huzzah!</R>"
 	for c.state == stateInGame {
 		_, err := c.Telnet.Read()
 		if err != nil {

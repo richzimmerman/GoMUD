@@ -1,7 +1,5 @@
 package mobs
 
-import "spells"
-
 /*
 This is the base race Mob for any "living" being in the game, ie. Players, NPCs, and creatures
 */
@@ -12,10 +10,9 @@ type Mob struct {
 	health      int16
 	fatigue     int16
 	power       int16
-	// TODO: might wants buffs to be a struct
-	buffs map[string]*spells.Buff
-	// TODO: might want debuffs to be a struct
-	debuffs map[string]*spells.Debuff
+	buffs       map[string]string
+	debuffs     map[string]string
+	location    string
 }
 
 func (m *Mob) Name() string {

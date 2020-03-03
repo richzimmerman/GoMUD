@@ -34,22 +34,15 @@ func (c *Client) accountMenu() error {
 				c.state = stateAccountQuit
 				break
 			default:
-				c.OutputSteam <- fmt.Sprintf("<Y>You've enterred:</Y> %s", input)
-				// TODO: accept character name input
-				// ok, err := c.Account.VerifyCharacter(input)
-				//if err != nil {
-				//	return fmt.Errorf("unable to verify character: %s for account: %s", input, c.Account.Name)
-				//}
-				//if ok {
-				//	// TODO: maybe not take char as input, but generate c.Player with input (character name)
-				//	// or possibly this function can return the character to log in to?
-				//	go c.enterGame(input)
-				//	return nil
-				//} else {
-				//	c.OutputSteam <- []byte(fmt.Sprintf("You do not have a character named %s", input))
-				//	c.state = stateAccountMenu
-				//	break
-				//}
+				input = strings.Title(input)
+				player, ok := c.Account.Characters[input]
+				if !ok {
+					c.OutputSteam <- "<Y>The character does not exist!</Y>"
+				} else {
+					c.Player = player
+					c.state = stateInGame
+					return nil
+				}
 			}
 			break
 		case stateAccountMenu:
@@ -57,10 +50,15 @@ func (c *Client) accountMenu() error {
 			c.state = statePrompt
 			break
 		case stateAccountNewCharacter:
-			// TODO: character creation
-			c.OutputSteam <- "creating character!"
-			c.createCharacter()
-			break
+			err := c.createCharacter()
+			if err != nil {
+				return utils.Error(err)
+			}
+			if c.state == stateAccountMenu {
+				break
+			} else {
+				return nil
+			}
 		case stateAccountListCharacters:
 			// TODO: list characters (Account struct method)
 			if len(c.Account.Characters) == 0 {

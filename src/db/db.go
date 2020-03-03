@@ -17,40 +17,6 @@ type DbConnection struct {
 	Connection *sql.DB
 }
 
-type DBAccount struct {
-	Name     string
-	Password string
-	LastIP   string
-	Email    string
-}
-
-type DBPlayer struct {
-	Name        string
-	Account     string
-	DisplayName string
-	Level       int8
-	Health      int16
-	Fatigue     int16
-	Power       int16
-	Title       string
-	RealmTitle  string
-	Race        string
-	Stats       string // JSON?
-	Stance      int8
-	Skills      string // JSON Array: List of skills to load later ["skill1", "skill2", "skill3"]
-	Spells      string // Same as above
-	Buffs       string // JSON array of objects [{"name": "buff1", "duration":12345}, {}, {}]
-	Debuffs     string // Same as above
-}
-
-type DBRace struct {
-	Name        string
-	Realm       int8
-	Type        int8
-	SkillList   string // JSON array
-	Description string
-}
-
 func InitDatabaseConnection() error {
 	db, err := sql.Open("mysql", "gomud:test@/GoMUD")
 	if err != nil {
@@ -98,7 +64,6 @@ func (d *DbConnection) AccountExists(accountName string) (bool, error) {
 			return false, utils.Error(err)
 		}
 	}
-
 	// For sanity's sake.
 	if a != "" {
 		return true, nil
@@ -151,7 +116,7 @@ func (d *DbConnection) LoadAccountCharacters(accountName string) (map[string]*DB
 	for rows.Next() {
 		p := &DBPlayer{}
 		err := rows.Scan(&p.Name, &p.Account, &p.DisplayName, &p.Level, &p.Health, &p.Fatigue, &p.Power, &p.Title,
-			&p.RealmTitle, &p.Race, &p.Stats, &p.Stance, &p.Skills, &p.Spells, &p.Buffs, &p.Debuffs)
+			&p.RealmTitle, &p.Race, &p.Stats, &p.Stance, &p.Skills, &p.Spells, &p.Buffs, &p.Debuffs, &p.Location)
 		if err != nil {
 			return nil, utils.Error(err)
 		}
@@ -186,7 +151,7 @@ func (d *DbConnection) CreateRace(r *DBRace) error {
 		return utils.Error(err)
 	}
 	defer statement.Close()
-
+	// TODO: missing remaining fields.
 	res, err := statement.Exec(r.Name, r.Realm, r.Type, r.SkillList, r.Description)
 	if err != nil {
 		return utils.Error(err)
@@ -208,11 +173,58 @@ func (d *DbConnection) LoadRaces() ([]*DBRace, error) {
 
 	for rows.Next() {
 		r := &DBRace{}
-		err := rows.Scan(&r.Name, &r.Realm, &r.Type, &r.SkillList, &r.Description)
+		err := rows.Scan(&r.Name, &r.Realm, &r.Type, &r.SkillList, &r.Description, &r.DefaultHealth, &r.DefaultFatigue,
+			&r.DefaultPower, &r.StartingRoom, &r.DefaultTitle, &r.DefaultStats)
 		if err != nil {
 			return nil, utils.Error(err)
 		}
 		races = append(races, r)
 	}
 	return races, nil
+}
+
+func (d *DbConnection) SavePlayer(p *DBPlayer) error {
+	s := `INSERT INTO Characters (Name, Account, DisplayName, Level, Health, Fatigue, Power, Title, RealmTitle,
+Race, Stats, Stance, Skills, Spells, Buffs, Debuffs, Location) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+ON DUPLICATE KEY UPDATE Account=VALUES(Account), DisplayName=VALUES(DisplayName), Level=VALUES(Level), 
+Health=VALUES(Health), Fatigue=VALUES(Fatigue), Power=VALUES(Power), Title=VALUES(Title), RealmTitle=VALUES(RealmTitle),
+Race=VALUES(Race), Stats=VALUES(Stats), Stance=VALUES(Stance), Skills=VALUES(Skills), Spells=VALUES(Spells), 
+Buffs=VALUES(Buffs), Debuffs=VALUES(Debuffs), Location=VALUES(Location)`
+	statement, err := d.Connection.Prepare(s)
+	if err != nil {
+		return utils.Error(err)
+	}
+	defer statement.Close()
+
+	res, err := statement.Exec(p.Name, p.Account, p.DisplayName, p.Level, p.Health, p.Fatigue, p.Power, p.Title,
+		p.RealmTitle, p.Race, p.Stats, p.Stance, p.Skills, p.Spells, p.Buffs, p.Debuffs, p.Location)
+	if err != nil {
+		return utils.Error(err)
+	}
+	_, err = res.RowsAffected()
+	if err != nil {
+		return utils.Error(err)
+	}
+	return nil
+}
+
+func (d *DbConnection) CharacterNameAvailable(name string) (bool, error) {
+	rows, err := d.Connection.Query("SELECT Name FROM Characters WHERE Name = ?", name)
+	if err != nil {
+		return false, utils.Error(err)
+	}
+	defer rows.Close()
+
+	var n string
+	for rows.Next() {
+		if err := rows.Scan(&n); err != nil {
+			return false, utils.Error(err)
+		}
+	}
+	fmt.Println(n)
+	if n != "" {
+		return false, nil
+	}
+	return true, nil
 }

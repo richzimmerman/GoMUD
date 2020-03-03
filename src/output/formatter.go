@@ -49,6 +49,6 @@ func ANSIFormatter(output string) ([]byte, error) {
 	}
 	output = ansiEnd.ReplaceAllString(output, ansiReset + defaultColor)
 
-	out := []byte(defaultColor + output + "\n")
+	out := []byte("\n" + defaultColor + output + "\n")
 	return out, nil
 }

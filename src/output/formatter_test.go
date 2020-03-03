@@ -7,7 +7,7 @@ import (
 
 func TestANSIFormatter(t *testing.T) {
 	in := "<B>Some colored</B> Text"
-	expectedOut := []byte("\u001B[37m\u001B[30mSome colored\u001B[0m\u001B[37m Text\n")
+	expectedOut := []byte("\n\u001B[37m\u001B[30mSome colored\u001B[0m\u001B[37m Text\n")
 
 	out, err := ANSIFormatter(in)
 	assert.Equal(t, expectedOut, out)

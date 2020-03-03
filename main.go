@@ -25,5 +25,6 @@ func main() {
 
 	mainCtx := context.Background()
 
+	fmt.Println("Server started.")
 	server.Start(mainCtx)
 }

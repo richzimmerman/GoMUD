@@ -4,6 +4,7 @@ import (
 	"config"
 	"fmt"
 	. "interfaces"
+	"lib/accounts"
 	"lib/players"
 	lib "lib/world"
 	"logger"
@@ -72,6 +73,8 @@ func (s *Session) startAfkTimer() {
 }
 
 func EndSession(s SessionInterface) {
+	// TODO: Maybe add LogOut() methods to player/account structs?
+
 	// Remove player from the room it is in
 	room, _ := lib.GetRoom(s.Player().GetLocation())
 	err := players.SyncPlayer(s.Player().(*player.Player))
@@ -83,6 +86,11 @@ func EndSession(s SessionInterface) {
 	// TODO: if players library is for ALL players and not just logged in players, remove this ##
 	players.RemovePlayer(s.Player().GetName())
 	// #######
+	acct, err := accounts.GetAccount(s.Player().AccountName())
+	if err != nil {
+		log.Err("failed to get account while ending session for player (%s)", s.Player().GetName())
+	}
+	acct.SetLoggedInStatus(false)
 	RemoveSessionByPlayerName(s.Player().GetName())
 	s.Client().Logout()
 }

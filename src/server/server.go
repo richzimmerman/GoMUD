@@ -1,19 +1,23 @@
 package server
 
 import (
+	"config"
 	"context"
+	"fmt"
 	"logger"
 	"net"
 	"os"
 	"os/signal"
+	"output"
 	"syscall"
 	"users/client"
 	"utils"
 )
 
 const (
-	port = ":4500"
-	tcp  = "tcp4"
+	port           = ":4500"
+	tcp            = "tcp4"
+	gameNameConfig = "GAMENAME"
 )
 
 var log = logger.NewLogger()
@@ -43,10 +47,16 @@ func NewServer() (*server, error) {
 func (s *server) handleConnection(c net.Conn) {
 	newClient := client.NewClient(c)
 
+	gameName, err := config.GetStringValue(gameNameConfig)
+	if err == nil {
+		welcomeMsg := fmt.Sprintf("\n<C>Welcome to</C> <Y>%s</Y><C>!</C>\n\n", gameName)
+		b, _ := output.ANSIFormatter(welcomeMsg)
+		c.Write(b)
+	}
+
 	s.Clients[c.RemoteAddr().String()] = newClient
 	log.Info("Connection received from: %s \n", c.RemoteAddr().String())
-
-	err := newClient.GameLoop()
+	err = newClient.GameLoop()
 	if err != nil {
 		log.Info("broken connection (%s): %v \n", c.RemoteAddr().String(), err)
 	}

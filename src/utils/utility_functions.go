@@ -15,12 +15,20 @@ func IndexOf(value string, slice []string) int {
 	return -1
 }
 
+func ContainsString(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 // Checks user input for prompts/menus to see if q/quit to exit out of prompt
 func CheckIfQuit(input string) bool {
 	input = strings.ToLower(input)
 	return input == "q" || input == "quit"
 }
-
 
 func JsonMarshalMapToArray(input map[string]*interface{}) (string, error) {
 	var tmp []string

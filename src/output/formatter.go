@@ -34,6 +34,7 @@ var ansiStart = regexp.MustCompile("<(B|R|G|Br|Bl|P|C|W|Y|BW)>")
 var ansiEnd = regexp.MustCompile("</(B|R|G|Br|Bl|P|C|W|Y|BW)>")
 
 var ansiReset = "\u001B[0m"
+
 // Defaulting text color to white here so to save having to change everything to white later.
 // This might not be default telnet behavior though
 var defaultColor = ansiMap["<W>"]
@@ -47,8 +48,8 @@ func ANSIFormatter(output string) ([]byte, error) {
 	for elem, ansiCode := range ansiMap {
 		output = strings.ReplaceAll(output, elem, ansiCode)
 	}
-	output = ansiEnd.ReplaceAllString(output, ansiReset + defaultColor)
+	output = ansiEnd.ReplaceAllString(output, ansiReset+defaultColor)
 
-	out := []byte("\n" + defaultColor + output + "\n")
+	out := []byte("\n" + defaultColor + output + "\n\n")
 	return out, nil
 }

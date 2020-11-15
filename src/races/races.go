@@ -51,17 +51,17 @@ func loadRace(r *db.DBRace) (*Race, error) {
 	// Unmarshal JSON string, iterate over skill list, load skill pointers into map
 	// skills := ^that
 	race := &Race{
-		Name:        r.Name,
-		Realm:       r.Realm,
-		Type:        r.Type,
-		SkillList:   nil,
-		Description: r.Description,
-		DefaultHealth: r.DefaultHealth,
+		Name:           r.Name,
+		Realm:          r.Realm,
+		Type:           r.Type,
+		SkillList:      nil,
+		Description:    r.Description,
+		DefaultHealth:  r.DefaultHealth,
 		DefaultFatigue: r.DefaultFatigue,
-		DefaultPower: r.DefaultPower,
-		StartingRoom: r.StartingRoom,
-		DefaultTitle: r.DefaultTitle,
-		DefaultStats: make(map[string]int8),
+		DefaultPower:   r.DefaultPower,
+		StartingRoom:   r.StartingRoom,
+		DefaultTitle:   r.DefaultTitle,
+		DefaultStats:   make(map[string]int8),
 	}
 
 	err := json.Unmarshal([]byte(r.DefaultStats), &race.DefaultStats)

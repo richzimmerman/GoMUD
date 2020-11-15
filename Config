@@ -1,0 +1,5 @@
+GAMENAME=Mrbagginz's World
+
+# Afk timer number in Minutes, if not specified then the afk timer will error our and
+# just not start
+AFKTIMER=1

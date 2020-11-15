@@ -3,16 +3,20 @@ package telnet
 import (
 	"bufio"
 	"bytes"
-	"commands"
 	"fmt"
+	"input"
+	"lib/commands"
+	"lib/sessions"
+	"logger"
 	"net"
 	"strings"
+	"time"
 	"utils"
 )
 
 const (
 	MaxInputSize = 128
-	BufferSize = 2048
+	BufferSize   = 2048
 
 	iac  = byte(255)
 	will = byte(251)
@@ -39,6 +43,8 @@ const (
 	stateIacSbDataIac = 9
 )
 
+var log = logger.NewLogger()
+
 type Telnet struct {
 	Connection     net.Conn
 	InputSteam     *bufio.Reader
@@ -46,20 +52,22 @@ type Telnet struct {
 	subnegOffset   int
 	subnegotiation []byte
 	negState       int
-
-	parser *commands.Parser
+	// parser         *commands.Parser
+	commandQueue chan *input.Input
 }
 
 func NewTelnet(c net.Conn, i *bufio.Reader) *Telnet {
-	parser := &commands.Parser{Queue: make(chan string)}
-	go parser.Start()
+	// parser := &commands.Parser{Queue: make(chan *input.Input)}
+	// go parser.Start()
 	t := &Telnet{
 		Connection:   c,
 		InputSteam:   i,
 		Data:         make(chan []byte),
 		subnegOffset: 0,
-		parser:     parser,
+		// parser:       parser,
+		commandQueue: make(chan *input.Input),
 	}
+	go t.StartParsing()
 	return t
 }
 
@@ -89,6 +97,10 @@ func (t *Telnet) Prompt() (string, error) {
 }
 
 func (t *Telnet) Read() (int, error) {
+	/*
+		This function shouldn't be used until after a user has logged into a character. So the *mobs.Player
+		should not be nil, and user input is generic enough to be passed along to the parser
+	*/
 	i := 0
 	inputBuffer := make([]byte, MaxInputSize)
 	for i == 0 {
@@ -105,10 +117,50 @@ func (t *Telnet) Read() (int, error) {
 	}
 	// Remove trailing null bytes
 	inputBuffer = bytes.Trim(inputBuffer, "\x00")
-	input := string(inputBuffer)
+	inputString := string(inputBuffer)
 	// Trim whitespace (new lines)
-	t.parser.Queue <- strings.TrimSpace(input)
+	s, _, err := sessions.GetSessionByIpAddress(t.Connection.RemoteAddr().String())
+	if err != nil {
+		s.Client().Out("You cannot do that because you shouldn't exist!!")
+	} else {
+		parsableInput := input.NewInput(s, strings.TrimSpace(inputString))
+		t.commandQueue <- parsableInput
+	}
 	return i, nil
+}
+
+func (t *Telnet) StartParsing() {
+	t.commandQueue = make(chan *input.Input)
+	defer close(t.commandQueue)
+
+	for {
+		select {
+		case input := <-t.commandQueue:
+			s, _, e := sessions.GetSessionByIpAddress(t.Connection.RemoteAddr().String())
+			if e != nil {
+				log.Err("%v", e)
+			}
+			s.InputReceived(time.Now().Unix())
+			// It's probably important to NOT parse inputs concurrently to prevent possible race conditions
+			err := t.parseInput(input)
+			if err != nil {
+				s.Client().Out("Command not found.")
+			}
+			break
+		}
+	}
+}
+
+func (t *Telnet) parseInput(i *input.Input) error {
+	// TODO: chat parsing before general command parsing (PROBABLY NOT THOUGH)
+	split := strings.Split(i.Input(), " ")
+	cmd := split[0]
+	command, err := commands.GetCommand(cmd)
+	if err != nil {
+		return utils.Error(err)
+	}
+	command.Execute(i.Session(), split)
+	return nil
 }
 
 func (t *Telnet) respondToNegotiation(response byte, opt byte) (err error) {

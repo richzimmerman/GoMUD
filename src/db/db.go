@@ -3,9 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"utils"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var DatabaseConnection *DbConnection
@@ -56,6 +57,7 @@ func (d *DbConnection) AccountExists(accountName string) (bool, error) {
 
 	var a string
 	err = searchStatement.QueryRow(accountName).Scan(&a)
+	fmt.Printf("Got account name (%s) and input is (%s)\n", a, accountName)
 	if err != nil {
 		// This should indicate that now row was returned and the account does not exist.
 		if strings.Contains(err.Error(), "no rows in result") {
@@ -65,10 +67,11 @@ func (d *DbConnection) AccountExists(accountName string) (bool, error) {
 		}
 	}
 	// For sanity's sake.
-	if a != "" {
-		return true, nil
-	} else {
+	// TODO handle case insensitivity... this is on the mysql side
+	if a == "" || a != accountName {
 		return false, nil
+	} else {
+		return true, nil
 	}
 }
 
@@ -105,6 +108,26 @@ func (d *DbConnection) LoadAccount(accountName string) (*DBAccount, error) {
 	return a, nil
 }
 
+func (d *DbConnection) LoadAllAccounts() (map[string]*DBAccount, error) {
+	rows, err := d.Connection.Query("SELECT * FROM Accounts")
+	if err != nil {
+		return nil, utils.Error(err)
+	}
+	defer rows.Close()
+
+	list := make(map[string]*DBAccount)
+
+	for rows.Next() {
+		a := &DBAccount{}
+		err := rows.Scan(&a.Name, &a.Password, &a.LastIP, &a.Email)
+		if err != nil {
+			return nil, utils.Error(err)
+		}
+		list[a.Name] = a
+	}
+	return list, nil
+}
+
 func (d *DbConnection) LoadAccountCharacters(accountName string) (map[string]*DBPlayer, error) {
 	r := make(map[string]*DBPlayer)
 	rows, err := d.Connection.Query("SELECT * FROM Characters WHERE Account = ?", accountName)
@@ -123,6 +146,22 @@ func (d *DbConnection) LoadAccountCharacters(accountName string) (map[string]*DB
 		r[p.Name] = p
 	}
 	return r, nil
+}
+
+func (d *DbConnection) QueryPlayer(name string) (*DBPlayer, error) {
+	searchStatement, err := d.Connection.Prepare("SELECT * FROM Characters WHERE Name = ?")
+	if err != nil {
+		return nil, utils.Error(err)
+	}
+	defer searchStatement.Close()
+
+	p := &DBPlayer{}
+	err = searchStatement.QueryRow(name).Scan(&p.Name, &p.Account, &p.DisplayName, &p.Level, &p.Health, &p.Fatigue, &p.Power, &p.Title,
+		&p.RealmTitle, &p.Race, &p.Stats, &p.Stance, &p.Skills, &p.Spells, &p.Buffs, &p.Debuffs, &p.Location)
+	if err != nil {
+		return nil, utils.Error(err)
+	}
+	return p, nil
 }
 
 func (d *DbConnection) ChangePassword(accountName string, password string) error {

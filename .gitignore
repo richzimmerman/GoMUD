@@ -13,11 +13,14 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-
+.vscode/*
 .idea/*
 
+bin/
 pkg/
 src/gopkg.in/*
 src/github.com/*
 
 Notes.txt
+# Compiled binary from `go build`
+GoMUD

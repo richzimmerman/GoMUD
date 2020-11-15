@@ -9,6 +9,7 @@ import (
 	"logger"
 	"sync"
 	"time"
+	"users/player"
 	"utils"
 )
 
@@ -73,7 +74,10 @@ func (s *Session) startAfkTimer() {
 func EndSession(s SessionInterface) {
 	// Remove player from the room it is in
 	room, _ := lib.GetRoom(s.Player().GetLocation())
-	// TODO: Sync player data
+	err := players.SyncPlayer(s.Player().(*player.Player))
+	if err != nil {
+		log.Err("failed to sync player (%s) data: %v", s.Player().GetName(), err)
+	}
 	room.RemovePlayer(s.Player().GetName())
 	// #######
 	// TODO: if players library is for ALL players and not just logged in players, remove this ##

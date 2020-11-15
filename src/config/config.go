@@ -49,7 +49,6 @@ func LoadConfiguration(filename string) error {
 		log.Fatal(err)
 		return err
 	}
-	fmt.Println(Configuration)
 	return nil
 }
 

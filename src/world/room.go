@@ -2,7 +2,6 @@ package world
 
 import (
 	"container/list"
-	"context"
 	"fmt"
 	"interfaces"
 	. "interfaces"
@@ -21,9 +20,7 @@ type Room struct {
 	players     *list.List
 	nonPlayers  *list.List
 	// TODO: Items, Structures
-	// TODO: channel for commands, go routine, context
 	CommandQueue chan string
-	ctx          context.Context
 }
 
 func (r *Room) Lock() {
@@ -32,10 +29,6 @@ func (r *Room) Lock() {
 
 func (r *Room) Unlock() {
 	r.lock.Unlock()
-}
-
-func (r *Room) Context() context.Context {
-	return r.ctx
 }
 
 func (r *Room) Id() string {

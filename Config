@@ -1,4 +1,4 @@
-GAMENAME=Mrbagginz's World
+GAMENAME=World of MrBagginzcraft
 
 # Afk timer number in Minutes, if not specified then the afk timer will error our and
 # just not start. Comment out to disable.

@@ -127,21 +127,6 @@ func (c *Client) Out(msg string) {
 }
 
 func (c *Client) Logout() {
-	// TODO: handle this in sessions... but call the sessions kill handler
-	// This is nil
-	p, err := GetPlayer(c.AssociatedPlayer())
-	if err != nil {
-		log.Err("killing client without associated player: %v", err)
-		return
-	}
-	//
-	r, err := GetRoom(p.GetLocation())
-	if err != nil {
-		log.Err("unable to logout %s from room (%s): %v", p.GetName(), p.GetLocation(), err)
-		return
-	}
-	r.RemovePlayer(p.GetName())
-	RemovePlayer(p.GetName())
 	c.Connection.Close()
 }
 
@@ -157,7 +142,7 @@ func (c *Client) outListener() {
 			s, ok := <-c.OutputStream
 			if !ok {
 				log.Err("unable to read out channel: %s", c.Connection.LocalAddr())
-				return
+				break
 			}
 			bytes, err := output.ANSIFormatter(s)
 			if err != nil {
@@ -169,10 +154,9 @@ func (c *Client) outListener() {
 			c.outMutex.Unlock()
 			if err != nil {
 				log.Err("unable to write to client connection: %v\n", err)
-				return
+				break
 			}
 		}
-
 	}()
 }
 

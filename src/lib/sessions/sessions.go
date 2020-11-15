@@ -4,6 +4,8 @@ import (
 	"config"
 	"fmt"
 	. "interfaces"
+	"lib/players"
+	lib "lib/world"
 	"logger"
 	"sync"
 	"time"
@@ -47,10 +49,6 @@ func (s *Session) InputReceived(timestamp int64) {
 	s.lastInput = timestamp
 }
 
-func (s *Session) EndSession() {
-	return
-}
-
 func (s *Session) startAfkTimer() {
 	timeoutMinutes, err := config.GetIntegerValue(afkTimerConfig)
 	if err != nil {
@@ -66,9 +64,23 @@ func (s *Session) startAfkTimer() {
 			// Diff duration between now and last input should not be greater than Duration of timeout minutes
 			//  if so, end the session
 			s.Client().Out("You've been AFK for too long. Good bye.")
-			s.EndSession()
+			EndSession(s)
+			break
 		}
 	}
+}
+
+func EndSession(s SessionInterface) {
+	// Remove player from the room it is in
+	room, _ := lib.GetRoom(s.Player().GetLocation())
+	// TODO: Sync player data
+	room.RemovePlayer(s.Player().GetName())
+	// #######
+	// TODO: if players library is for ALL players and not just logged in players, remove this ##
+	players.RemovePlayer(s.Player().GetName())
+	// #######
+	RemoveSessionByPlayerName(s.Player().GetName())
+	s.Client().Logout()
 }
 
 func CreateSession(c ClientInterface, p PlayerInterface) {

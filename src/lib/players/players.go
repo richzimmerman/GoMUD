@@ -13,6 +13,9 @@ import (
 
 var players = make(map[string]PlayerInterface)
 
+// TODO: Load all the players from the DB at start up..
+// these don't need to indicate LOGGED IN players, just all players
+
 func AddPlayer(p PlayerInterface) error {
 	if _, found := players[p.GetName()]; found {
 		return fmt.Errorf("player (%s) already exists", p.GetName())

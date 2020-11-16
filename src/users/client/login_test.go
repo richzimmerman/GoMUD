@@ -1,12 +1,13 @@
 package client
 
 import (
-	"bufio"
 	"db"
 	"fmt"
+	"lib/accounts"
 	"net"
 	"sync"
 	"testing"
+	. "tests"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -28,6 +29,10 @@ func TestLogin_Success(t *testing.T) {
 		t.Fatalf("error mocking database: %v", err)
 	}
 	defer db.DatabaseConnection.Connection.Close()
+
+	acct := NewMockAccount()
+	accounts.AddAccount(acct)
+	defer accounts.RemoveAccount(acct.AccountName())
 
 	accountNameQuery := sqlmock.NewRows([]string{"Name"}).AddRow("TestAccount")
 	passQuery := sqlmock.NewRows([]string{"Password"}).AddRow("TestPassword")
@@ -62,13 +67,11 @@ func TestLogin_Success(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := NewTestClientState(c, stateLogin)
-	client.Connection = c // might need to be accepted connection
-	client.In = bufio.NewReader(c)
-
-	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
-	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
+	// Seems to be a race condition from when the connection is made to when we try to
+	// read from the bufio.Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
 	time.Sleep(time.Millisecond * 50)
+
+	client := NewTestClientState(c, stateLogin)
 
 	var wg sync.WaitGroup
 

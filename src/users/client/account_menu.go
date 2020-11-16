@@ -74,6 +74,7 @@ func (c *Client) accountMenu(accountName string) error {
 					p, err := CheckPlayer(character, nil)
 					if err != nil {
 						log.Err("account (%s) has a character (%s) that does not exist", acct.AccountName(), character)
+						continue
 					}
 					c.OutputStream <- fmt.Sprintf("<Y>%s</Y>: Level %d %s",
 						p.GetName(), p.GetLevel(), p.RaceName())

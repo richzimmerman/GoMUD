@@ -1,17 +1,18 @@
 package client
 
 import (
-	"bufio"
 	"db"
 	"fmt"
+	"lib/accounts"
 	. "lib/players"
 	"net"
 	"races"
 	"sync"
 	"testing"
-	"tests"
+	. "tests"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +25,26 @@ func callAccountMenu(client *Client, wg *sync.WaitGroup) error {
 func TestAccountMenu(t *testing.T) {
 	var err error
 	var conn net.Conn
+
+	mock, err := InitMockDB()
+	if err != nil {
+		t.Fatalf("error mocking database: %v", err)
+	}
+	defer db.DatabaseConnection.Connection.Close()
+
+	columnNames := []string{
+		"Name", "Account", "DisplayName", "Level", "Health", "Fatigue", "Power", "Title", "RealmTitle", "Race", "Stats",
+		"Stance", "Skills", "Spells", "Buffs", "Debuffs", "Location",
+	}
+	characterQuery := sqlmock.NewRows(columnNames).AddRow("TestPlayer", "TestAccount", "TestPlayer", "1", "1", "1",
+		"1", "SlayerBro", "Slayer of Bros", "TestClass", "{\"strength\": 20, \"agility\": 20}",
+		"0", "[]", "[]", "{}", "{}", "0")
+
+	mock.ExpectPrepare("SELECT \\* FROM Characters").ExpectQuery().WithArgs("TestPlayer").WillReturnRows(characterQuery)
+
+	acct := NewMockAccount()
+	accounts.AddAccount(acct)
+	defer accounts.RemoveAccount(acct.AccountName())
 
 	races.Races = make(map[string]*races.Race)
 
@@ -60,19 +81,14 @@ func TestAccountMenu(t *testing.T) {
 		Debuffs:     "{}",
 	}
 
-	mockClient := tests.NewMockClient()
-	fakePlayer, err := LoadPlayer(mockClient, p)
-	if err != nil {
-		t.Fatalf("failed loading test player: %v\n", err)
-	}
-
 	l, err := net.Listen("tcp4", ":54321")
 	if err != nil {
 		fmt.Printf("unable to spin up test server: %v", err)
 	}
 
+	var c net.Conn
 	go func() {
-		_, err := l.Accept()
+		c, err = l.Accept()
 		if err != nil {
 			fmt.Printf("unable to accept connection on test server: %v", err)
 		}
@@ -84,15 +100,17 @@ func TestAccountMenu(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := NewTestClientState(conn, stateAccountMenu)
-	client.Connection = conn
-	client.In = bufio.NewReader(conn)
-	client.AccountInfo.Account = NewMockAccount().AccountName()
-	client.AccountInfo.Player = fakePlayer.GetName()
-
-	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
-	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
+	// Seems to be a race condition from when the connection is made to when we try to
+	// read from the bufio.Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
 	time.Sleep(time.Millisecond * 50)
+
+	client := NewTestClientState(c, stateAccountMenu)
+	client.AccountInfo.Account = acct.AccountName()
+	fakePlayer, err := LoadPlayer(client, p)
+	if err != nil {
+		t.Fatalf("failed loading test player: %v\n", err)
+	}
+	client.AccountInfo.Player = fakePlayer.GetName()
 
 	var wg sync.WaitGroup
 
@@ -120,7 +138,7 @@ func TestAccountMenu(t *testing.T) {
 				}
 				break
 			case 2:
-				// q
+				// quit
 				assert.Equal(t, "Disconnected!", o)
 				break
 			}

@@ -26,7 +26,11 @@ func (m *MockClient) GameLoop() error {
 }
 
 func (m *MockClient) Out(msg string) {
-	// do nothing
+	// fulfilling interface
+}
+
+func (m *MockClient) Logout() {
+	// fulfilling interface
 }
 
 func (m *MockClient) GetRemoteAddress() string {

@@ -57,7 +57,6 @@ func (d *DbConnection) AccountExists(accountName string) (bool, error) {
 
 	var a string
 	err = searchStatement.QueryRow(accountName).Scan(&a)
-	fmt.Printf("Got account name (%s) and input is (%s)\n", a, accountName)
 	if err != nil {
 		// This should indicate that now row was returned and the account does not exist.
 		if strings.Contains(err.Error(), "no rows in result") {
@@ -261,7 +260,6 @@ func (d *DbConnection) CharacterNameAvailable(name string) (bool, error) {
 			return false, utils.Error(err)
 		}
 	}
-	fmt.Println(n)
 	if n != "" {
 		return false, nil
 	}

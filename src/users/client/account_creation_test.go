@@ -3,6 +3,7 @@ package client
 import (
 	"db"
 	"fmt"
+	"lib/accounts"
 	"net"
 	"sync"
 	"testing"
@@ -40,8 +41,9 @@ func TestAccountCreation_Success(t *testing.T) {
 		fmt.Printf("unable to spin up test server: %v", err)
 	}
 
+	var c net.Conn
 	go func() {
-		_, err := l.Accept()
+		c, err = l.Accept()
 		if err != nil {
 			fmt.Printf("unable to accept connection on test server: %v", err)
 		}
@@ -53,11 +55,12 @@ func TestAccountCreation_Success(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := NewTestClientState(conn, stateAccountChangePassword)
-
-	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
-	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
+	// Seems to be a race condition from when the connection is made to when we try to
+	// read from the bufio.Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
 	time.Sleep(time.Millisecond * 50)
+
+	client := NewTestClientState(c, stateAccountChangePassword)
+	client.SetAssociatedAccount("")
 
 	var acctName string
 	var wg sync.WaitGroup
@@ -71,7 +74,7 @@ func TestAccountCreation_Success(t *testing.T) {
 	// with the account in the database.
 	acct, err := client.AssociatedAccount()
 	assert.Nil(t, err)
-	assert.Equal(t, expectedAccountName, acct)
+	assert.Equal(t, "", acct)
 
 	// Prompt will ask for new password and confirmation via client.OutputStream so write new password on prompts.
 	i := 0
@@ -116,6 +119,17 @@ func TestAccountCreation_Success(t *testing.T) {
 	// Wait for go routine to complete before assertions
 	wg.Wait()
 
-	assert.Equal(t, expectedAccountName, acctName)
+	acct, _ = client.AssociatedAccount()
 	assert.Nil(t, err)
+	assert.Equal(t, expectedAccountName, acct)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expectedAccountName, acctName)
+
+	a, err := accounts.GetAccount(acct)
+	assert.Nil(t, err)
+	assert.NotNil(t, a)
+
+	// Clean up
+	accounts.RemoveAccount(acct)
 }

@@ -1,13 +1,14 @@
 package client
 
 import (
-	"bufio"
 	"db"
 	"fmt"
+	"lib/accounts"
 	. "lib/accounts"
 	"net"
 	"sync"
 	"testing"
+	. "tests"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -23,6 +24,10 @@ func callChangePassword(client *Client, wg *sync.WaitGroup) error {
 func TestChange_Password_Success(t *testing.T) {
 	var conn net.Conn
 
+	mockAcct := NewMockAccount()
+	accounts.AddAccount(mockAcct)
+	defer RemoveAccount(mockAcct.AccountName())
+
 	mock, err := InitMockDB()
 	if err != nil {
 		t.Fatalf("error mocking database: %v", err)
@@ -37,8 +42,9 @@ func TestChange_Password_Success(t *testing.T) {
 		fmt.Printf("unable to spin up test server: %v", err)
 	}
 
+	var c net.Conn
 	go func() {
-		_, err := l.Accept()
+		c, err = l.Accept()
 		if err != nil {
 			fmt.Printf("unable to accept connection on test server: %v", err)
 		}
@@ -50,16 +56,17 @@ func TestChange_Password_Success(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := NewTestClientState(conn, stateAccountChangePassword)
-	client.Connection = conn
-	client.In = bufio.NewReader(conn)
-	client.AccountInfo.Account = NewMockAccount().AccountName()
-
-	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
-	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
+	// Seems to be a race condition from when the connection is made to when we try to
+	// read from the bufio.Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
 	time.Sleep(time.Millisecond * 50)
 
+	client := NewTestClientState(c, stateAccountChangePassword)
+	client.AccountInfo.Account = mockAcct.AccountName()
+
 	var wg sync.WaitGroup
+
+	a, _ := GetAccount(mockAcct.AccountName())
+	assert.Equal(t, "TestPassword", a.GetPassword())
 
 	wg.Add(1)
 	go func() {
@@ -89,13 +96,23 @@ func TestChange_Password_Success(t *testing.T) {
 }
 
 func TestChange_Password_Mismatch(t *testing.T) {
+	_, err := InitMockDB()
+	if err != nil {
+		t.Fatalf("error mocking database: %v", err)
+	}
+	defer db.DatabaseConnection.Connection.Close()
+
+	mockAcct := NewMockAccount()
+	accounts.AddAccount(mockAcct)
+
 	l, err := net.Listen("tcp4", ":54321")
 	if err != nil {
 		fmt.Printf("unable to spin up test server: %v", err)
 	}
 
+	var c net.Conn
 	go func() {
-		_, err := l.Accept()
+		c, err = l.Accept()
 		if err != nil {
 			fmt.Printf("unable to accept connection on test server: %v", err)
 		}
@@ -108,14 +125,12 @@ func TestChange_Password_Mismatch(t *testing.T) {
 	}
 	defer conn.Close()
 
-	client := NewTestClientState(conn, stateAccountChangePassword)
-	client.Connection = conn // might need to be accepted connection
-	client.In = bufio.NewReader(conn)
-	client.AccountInfo.Account = NewMockAccount().AccountName()
-
-	// Seems to be a race condition from when the connection is made to when callChangePassword tries to
-	// read from the bufio Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
+	// Seems to be a race condition from when the connection is made to when we try to
+	// read from the bufio.Reader, occasionally causing nil pointer. Minor sleep seems to avoid that
 	time.Sleep(time.Millisecond * 50)
+
+	client := NewTestClientState(c, stateAccountChangePassword)
+	client.AccountInfo.Account = mockAcct.AccountName()
 
 	var wg sync.WaitGroup
 
@@ -146,10 +161,10 @@ func TestChange_Password_Mismatch(t *testing.T) {
 
 	assert.NotNil(t, err)
 
-	acctName, err := client.AssociatedAccount()
-	assert.Nil(t, err)
-	acct, err := GetAccount(acctName)
-	assert.Nil(t, err)
+	acctName, e := client.AssociatedAccount()
+	assert.Nil(t, e)
+	acct, e := GetAccount(acctName)
+	assert.Nil(t, e)
 
 	assert.Equal(t, "TestPassword", acct.GetPassword())
 	assert.Equal(t, "password change failed, passwords do not match", err.Error())

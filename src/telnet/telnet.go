@@ -52,19 +52,15 @@ type Telnet struct {
 	subnegOffset   int
 	subnegotiation []byte
 	negState       int
-	// parser         *commands.Parser
-	commandQueue chan *input.Input
+	commandQueue   chan *input.Input
 }
 
 func NewTelnet(c net.Conn, i *bufio.Reader) *Telnet {
-	// parser := &commands.Parser{Queue: make(chan *input.Input)}
-	// go parser.Start()
 	t := &Telnet{
 		Connection:   c,
 		InputSteam:   i,
 		Data:         make(chan []byte),
 		subnegOffset: 0,
-		// parser:       parser,
 		commandQueue: make(chan *input.Input),
 	}
 	go t.StartParsing()

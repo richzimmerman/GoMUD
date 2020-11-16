@@ -34,6 +34,7 @@ func (c *Client) createAccountPrompt() (string, error) {
 					return "", utils.Error(err)
 				}
 				if strings.ToLower(i) == "y" {
+					c.SetAssociatedAccount(accountName)
 					c.state = stateCreateAccountPassword
 				} else if strings.ToLower(i) == "n" {
 					// Reset account creation (or maybe go back to main menu) (or maybe add Q option)
@@ -97,7 +98,7 @@ func (c *Client) createAccountPrompt() (string, error) {
 			createState = stateCreateAccountEmail
 			break
 		case stateCreateAccount:
-			lastip := strings.SplitN(c.Connection.RemoteAddr().String(), ":", 1)[0]
+			lastip := strings.Split(c.Connection.RemoteAddr().String(), ":")[0]
 			_, err = accounts.NewAccount(accountName, password, lastip, email)
 			if err != nil {
 				return "", utils.Error(err)

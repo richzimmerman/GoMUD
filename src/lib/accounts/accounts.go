@@ -36,7 +36,7 @@ func LoadAccounts() error {
 	return nil
 }
 
-func AddAccount(a *account.Account) error {
+func AddAccount(a AccountInterface) error {
 	if _, found := accounts[a.AccountName()]; found {
 		return fmt.Errorf("account (%s) already exists", a.AccountName())
 	}

@@ -1,6 +1,6 @@
 test:
 	echo "This seems like a bad way to run tests..."
-	go test -cover ./src/users/... ./src/telnet ./src/output ./src/mobs
+	go test -cover ./src/users/... ./src/telnet ./src/output ./src/mobs ./src/commands/... ./src/lib/...
 
 build:
 	go build -o bin/GameServer main.go

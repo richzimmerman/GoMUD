@@ -10,19 +10,20 @@ import (
 )
 
 const (
-	north                = "North"
-	northeast            = "Northeast"
-	northwest            = "Northwest"
-	south                = "South"
-	southeast            = "Southeast"
-	southwest            = "Southwest"
-	east                 = "East"
-	west                 = "West"
-	out                  = "Out"
-	up                   = "Up"
-	down                 = "Down"
-	directionFirstPerson = "You go %s"
-	directionThirdPerson = "<A.NAME> leaves to the %s"
+	north                 = "North"
+	northeast             = "Northeast"
+	northwest             = "Northwest"
+	south                 = "South"
+	southeast             = "Southeast"
+	southwest             = "Southwest"
+	east                  = "East"
+	west                  = "West"
+	out                   = "Out"
+	up                    = "Up"
+	down                  = "Down"
+	directionFirstPerson  = "You go %s"
+	directionThirdPerson  = "<A.NAME> leaves to the %s"
+	nonCardDirThirdPerson = "<A.NAME> goes %s"
 )
 
 func firstPersonMsg(dirName string) string {
@@ -30,7 +31,15 @@ func firstPersonMsg(dirName string) string {
 }
 
 func thirdPersonMsg(dirName string) string {
-	return fmt.Sprintf(directionThirdPerson, strings.ToLower(dirName))
+	var msg string
+	switch dirName {
+	case up, down, out:
+		msg = fmt.Sprintf(nonCardDirThirdPerson, strings.ToLower(dirName))
+		break
+	default:
+		msg = fmt.Sprintf(directionThirdPerson, strings.ToLower(dirName))
+	}
+	return msg
 }
 
 func execute(s SessionInterface, input []string, directionName string) error {
@@ -52,5 +61,6 @@ func execute(s SessionInterface, input []string, directionName string) error {
 	msg := message.NewMessage(player, nil, unformattedMsg)
 	currentRoom.Send(msg)
 	lib.MovePlayer(player, exit.Destination())
+	// TODO: add "enterred" message in destination room, exit.Destination() maybe should be a RoomInterface
 	return nil
 }

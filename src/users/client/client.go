@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	. "lib/players"
-	"lib/sessions"
+	. "lib/sessions"
 	. "lib/world"
 	"logger"
 	"message"
@@ -232,7 +232,7 @@ func (c *Client) inGameLoop() {
 		log.Err("room (%s) does not seem to exist", player.GetLocation())
 		c.Connection.Close()
 	}
-	sessions.CreateSession(c, player)
+	CreateSession(c, player)
 	// TODO: Player does not exist in room, might need to add player to room rather than move
 	MovePlayer(player, player.GetLocation())
 	u := message.NewUnformattedMessage("You appear out of thin air!", "", "<Y><A.NAME></Y> appears out of thin air!")

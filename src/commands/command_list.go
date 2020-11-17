@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"commands/chat"
 	"commands/common"
 	"commands/directions"
 )
@@ -9,6 +10,7 @@ import (
 //   Restating the fact that I don't like this so future me will figure out something better, if possible
 var nilCommandTypes = []interface{}{
 	(*common.Look)(nil),
+	(*chat.Say)(nil),
 	(*directions.North)(nil),
 	(*directions.Northeast)(nil),
 	(*directions.Northwest)(nil),

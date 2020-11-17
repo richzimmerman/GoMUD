@@ -17,7 +17,3 @@ func (c Look) Execute(s SessionInterface, input []string) error {
 	p.Send(room.Look(p))
 	return nil
 }
-
-func (c Look) Name() string {
-	return "Look"
-}

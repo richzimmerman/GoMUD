@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	. "interfaces"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,12 +11,8 @@ import (
 
 type MockCommand struct{}
 
-func (m *MockCommand) Execute(p PlayerInterface, input []string) error {
+func (m *MockCommand) Execute(s SessionInterface, input []string) error {
 	return fmt.Errorf("I ran a mock command")
-}
-
-func (m *MockCommand) Name() string {
-	return "MockCommandName"
 }
 
 func TestTrie(t *testing.T) {
@@ -59,7 +56,7 @@ func TestCommandMap(t *testing.T) {
 	cmd, err := GetCommand("foo")
 	assert.Nil(t, err)
 
-	assert.Equal(t, "MockCommandName", cmd.Name())
+	assert.Equal(t, reflect.TypeOf(fooCommand), reflect.TypeOf(cmd))
 	e := cmd.Execute(nil, nil)
 	assert.Equal(t, "I ran a mock command", e.Error())
 
@@ -80,7 +77,7 @@ func TestCommandMap(t *testing.T) {
 	cmdTwo, errTwo := GetCommand("fo")
 	assert.Nil(t, errTwo)
 
-	assert.Equal(t, "MockCommandName", cmdTwo.Name())
+	assert.Equal(t, reflect.TypeOf(fooCommand), reflect.TypeOf(cmdTwo))
 	eTwo := cmdTwo.Execute(nil, nil)
 	assert.Equal(t, "I ran a mock command", eTwo.Error())
 }

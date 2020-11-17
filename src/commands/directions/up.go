@@ -6,10 +6,6 @@ import (
 
 type Up struct{}
 
-func (u Up) Name() string {
-	return up
-}
-
 func (u Up) Execute(s SessionInterface, input []string) error {
-	return execute(s, input, u.Name())
+	return execute(s, input, up)
 }

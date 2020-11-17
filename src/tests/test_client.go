@@ -3,6 +3,7 @@ package tests
 type MockClient struct {
 	accountName string
 	player      string
+	fakeOutput  string
 }
 
 func (m *MockClient) AssociatedAccount() (string, error) {
@@ -26,7 +27,11 @@ func (m *MockClient) GameLoop() error {
 }
 
 func (m *MockClient) Out(msg string) {
-	// fulfilling interface
+	m.fakeOutput = msg
+}
+
+func (m *MockClient) GetOutput() string {
+	return m.fakeOutput
 }
 
 func (m *MockClient) Logout() {
